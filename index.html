@@ -1,0 +1,97 @@
+<html>
+
+<head>
+	<title>
+		
+	</title>
+	<link rel="stylesheet" href="styles.css">
+</head>
+
+	<body>
+
+		<h1>SPACE DEFENDER V2</h1>
+
+		<!-- 
+				Written Game Explanation 
+		-->
+
+		<h2>HOW TO PLAY</h2>
+		<p>
+			Space Defender V2 is a space game where you have to shoot enemy ships that spawn randomly with your ship.
+			<br> You have HEALTH and POWER.
+			<br> You loose X amount of health depending on what sort of enemy you collide if an enemy bullet hits you.
+			<br> You can upgrade your ship by pressing either 1, 2 or 3 in order to upgrade different attributes.
+			<br> Your goal is to shoot down as many enemies as you can, and try and achieve the highest score.
+			<br> Remeber to keep an eye out for your upgrades and incoming meteors.
+			<br>
+			<br>
+			<b>Controls:</b>
+			<br>
+			<b>Mouse Click</b> - Fire Bullet
+			<br>
+			<b>W</b> - While W Is Down, The Player Ship Will Not Move And You Can Shoot More Accurately If You Are Not Moving. (VERY Useful Button)
+			<br>
+			<b>1</b> - When pressed will decrease the amount of time it takes to reload a bullet. This gives a faster firing rate.
+			<br>
+			<b>2</b> - When pressed will increase the speed of the ship. This makes the ship go faster.
+		</p>
+
+		<!-- 
+				A table that tells what everything does
+			-->
+		<table>
+			<tr>
+				<td style="color: #00ff6c;"> Bullet (Mouse Click)</td>
+				<td><img src="assets/playerShip.png"></td>
+				<td>
+					This can kill any ship in one hit.
+					<br> You start off shooting vary slow.
+					<br> But can upgrade this as you gain money
+				</td>
+
+			</tr>
+			<tr>
+				<td style="color: #00ff6c;">Asteroid</td>
+				<td><img src="assets/meteor.png"></td>
+				<td>
+					Starts coming in on wave 3.
+					<br> Subtracts 50 from health if it hits you.
+					<br> Also subtracts 50 from score.
+				</td>
+			</tr>
+			<tr>
+				<td style="color: #00ff6c;">Sidekick Ship</td>
+				<td><img src="assets/allyTurret.png"></td>
+				<td>
+					Shoots in the same direction as the main ship.
+					<br> You can purchase him with the '3' key 
+					<br>and it lasts for 1 minute each time you buy it.
+				</td>
+			</tr>
+			<tr>
+				<td style="color: #00ff6c;">First Enemy</td>
+				<td><img src="assets/enemy.png"></td>
+				<td>
+					Can be killed with any bullet.
+					<br> If it collides with your ship you loose 5 health.
+				</td>
+			</tr>
+			<tr>
+				<td style="color: #00ff6c;">Second Enemy</td>
+				<td><img src="assets//enemyShooting.png"></td>
+				<td>
+					This enemy may look the same but you have to shoot it 10 times to kill it
+					<br> If it collides with your ship you loose 20 health.
+					<br> This enemy can shoot and each hit from it makes you lose 5 health
+				</td>
+
+			</tr>
+		</table>
+		<br>
+		<br>
+		<br>
+		<div>
+			<a href="gameFiles/menu.html" class="button buttonGame">Play the Game</a>
+		</div>
+	</body>
+</html>

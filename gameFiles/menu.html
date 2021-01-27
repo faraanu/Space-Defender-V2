@@ -1,0 +1,94 @@
+<html style="background-color: #222222">  
+
+<title>
+    SD
+</title>
+
+<script src="phaser.min.js"></script>
+<script src="phaser.js"></script>
+<script>
+    var game = new Phaser.Game(2500, 1500, Phaser.AUTO, '', {
+        preload: preload,
+        create: create,
+        update: update
+    });
+
+    /******************
+         Variables
+    ******************/
+    // Background image
+        var background;
+    // Buttons and images
+        var titleText;
+        var howToPlayText;
+        var playerShip;
+        var playerShipState1;
+        var playButton;
+        var howToPlayButton;
+        
+    // Green Text
+        var smallRedText = {
+            font: "37px Monospace",
+            fill: "#FFA500"
+        };
+    // Red Text
+        var redText = {
+            font: "97px Monospace",
+            fill: "#ff0044"
+        };
+    /******************
+         Functions
+    ******************/
+    /**** Ship Related ****//******************
+          Preload
+    ******************/
+    function preload() {
+        game.load.spritesheet('background', 'assets/background.png');                           // Background image spritesheet
+        game.load.spritesheet('playerShip', 'assets/playerShip.png', 85, 68, 11);               // Player ship state2 spritesheet
+        game.load.spritesheet('explosion', 'assets/explosion.png', 75, 75, 9);                  // Explosion sprite spritesheet
+        game.load.spritesheet('playButton', 'assets/playButton.png',150,75,2)                            // Button for upgrades
+        game.load.spritesheet('howToPlayButton', 'assets/howToPlayButton.png',150,75,2)                            // Button for upgrades
+    }
+
+    /******************
+          Create
+    ******************/
+    function create() {
+        game.physics.startSystem(Phaser.Physics.ARCADE);                    
+        background = game.add.sprite(-500,-500,'background');               // Background
+        titleText = game.add.text(1060, 600, "SPACE DEFENDERS", redText);   // Title
+        playButton = game.add.button(700, 800,'playButton', function() {    // Play Button
+			window.location.href = "template.html";
+		},this, 1,0,2);
+        howToPlayButton = game.add.button(700, 950,'howToPlayButton', function() { // How To Play Button
+			howToPlayText = game.add.text(1060, 750, "Mouse Click = Fire Bullet\nW = Stand Still (Very Useful)\n1 Key = Upgrade Bullet\n2 Key = Upgrade Ship Speed \n3 Key = Upgrade/Add an ally\nYour goal is to shoot down as many enemies\nas you can, and to try to get the highest \nscore (Make sure you keep an eye on upgrades \nand incoming meteors)!", smallRedText);     
+		},this, 1,0,2);
+        
+        
+
+        playerShip = game.add.sprite(690, 550, 'playerShip');               // Adding the player's ship sprite (and playing animation)
+        playerShip.animations.add('playerShipState1', [1, 2, 3, 4]);
+        playerShip.animations.play('playerShipState1', 21, true);  
+        
+        playButton.scale.setTo(1.8, 1.8);                               // Changing button sizes
+        howToPlayButton.scale.setTo(1.8, 1.8);
+        playerShip.scale.setTo(3, 3);                                   // Ship Image size
+    }
+    
+    function playGame(){}
+    function howToPlayGame(){}
+    
+   
+    /******************
+          Update
+    ******************/
+    function update() {
+        background.pivot.x = game.input.activePointer.x/10; // Making background move relative to the mouse piosition (looks cool)
+        background.pivot.y = game.input.activePointer.y/10;
+    }
+
+</script>
+    <body>
+        <p style="color:aliceblue; text-align: center; font-size: 20px;"><b>Please Zoom Out To Play ('ctrl' +'-')</b> <br> W = Stand Still, Mouse Click = Fire Bullet; 1 Key = Upgrade Bullet, 2 Key = Upgrade Ship Speed, 3 Key = Increase Health Limit</p>
+    </body>
+</html>

@@ -1,0 +1,697 @@
+<html style="background-color: #222222">  
+<!--
+ * Name: Faraan
+ * Date: Jan 19, 2018 
+ * Title: Space Defebders 
+ * Description: Main game code, Space defednders is a shoot em up game where you kill enemies to get ponints and upgrade your wepons
+    Some things added in addition to the old game 
+    - Amost re-wrote all code completely
+    - Added upgrades
+        -Upgrading bullet sleed
+        -Upgrading player Speed
+        -and Making it so that you can control 2 ships at once
+        -Adding metiors that consistently shoot across the map
+        -Adding enemy ship rotation (which we did not know how to implement last year)
+        -Created completely new spritesheets from scratch
+            -animated them
+        -Infinite waves (only had 5 last year becasue couldnt brogram it
+        -Timers (Tell you how long until something is ready, next wave is coming, etc)
+        -Improved enemy spawning
+        -And a lot more
+        
+-->
+
+<title>
+    SD
+</title>
+
+<script src="phaser.min.js"></script>
+<script src="phaser.js"></script>
+<script>
+    var game = new Phaser.Game(2500, 1500, Phaser.AUTO, '', {
+        preload: preload,
+        create: create,
+        update: update    });
+
+    /******************
+         Variables
+    ******************/
+    // Name of player (entered at the end)
+        var name;
+        var adjustedName;
+        var ended = false;
+    // Background image
+        var background;
+    // Player ship related
+        var playerShip;
+        var playerShipSpeed = 2000;
+        var playerShipState1;                   // Animation
+        var playerShipState2;                   // Animation
+        var playerShipState3;                   // Animation
+        var health = 100;
+        var healthText = "";
+        var allyTurret;
+        var allyTurretSpeed = 10000;
+        var allyUpgradePrice = 100;
+    // Bullets
+        var bullet;
+        var allyBullet;
+    // Bullet Reload speed
+        var reloadRate = 500;
+        var nextReload = 0;
+    // Next bullet available timer variables
+        var bulletReadyRate = 100;              // Updating timer every .1 seconds
+        var nextBulletReady = 0;
+        var nextBulletText = reloadRate / 1000; // changing it to seconds
+        var bulletText;
+    // Waves
+        var wave = 0;                           // Wave number
+        var waveText = "";                      // Text display stating wave number
+        var nextWave = 0; 
+        var nextWaveWait = 25000;
+        // variables for seconds until next wave timer (similar to all other timers used)
+        var secondsUntilNextWave;
+        var nextCheck = 0;
+        var wave3Reached = false;
+        
+    // Meteor
+        var meteor;
+        var meteorEndX;                          
+        var meteorEndY; 
+        var nextMeteorSpawn = 0;
+        var meteorSpawnTime = 10000;
+        var meteorSpeed = 500;
+    //Currency
+        var money = 0;
+        // Money timer
+        var moneyAddTime = 1000;
+        var nextMoneyAdd = 0;
+        var moneyText = "";                     // Text display ammount of money (number)
+    //Explosion(s)
+        var explosion;
+        var explode;                            // Animation
+    // Enemies
+        // Enemy1
+        var enemy1;
+        var enemy1Moving;                       // Animation
+        var enemy1Speed = 100;
+        // Enemy 1 spawn rate
+        var enemy1SpawnTime = 1500;
+        var nextSpawn = 0;
+        // Enemy2
+        var enemy2;
+        var enemy2Health = 10;  
+        var enemy2Speed = 50;
+        var enemy2Bullet;
+        // Enemy 2 spawn rate
+        var enemy2SpawnTime = 50000;
+        var nextSpawn2 = 0;
+        var enemy2BulletTime = 3000;
+        var nextEnemy2Bullet = 0;
+        var enemyBulletSpeed = 400;
+    // Contains text (that will be made to fade -> usually points)
+        var fadeText = "";
+    // Score
+        var score = 0;
+        var scoreText;
+    // Green Text
+        var greenText = {
+            font: "27px Monospace",
+            fill: "#FFA500"
+        };
+    // Red Text
+        var redText = {
+            font: "27px Monospace",
+            fill: "#ff0044"
+        };
+    // Game Over Text
+        var endTextFont = {
+            font: "92px Monospace",
+            fill: "#ff0044"
+        };
+    // Button(s) & Upgrades
+    var playerSpeedUpgradePrice = 10;
+    var bulletSpeedUpgradePrice = 25;
+    var bulletUpgradeText;
+    var playerSpeedUpgradeText;
+
+    /******************
+         Functions
+    ******************/
+    /**** Ship Related ****/
+    function followCursor(object, speed) {                  // Tells the object in the argument to move to the cursor
+        object.rotation = game.physics.arcade.moveToPointer(object, speed, game.input.activePointer, speed);
+    }
+    function allyTurretRotate(object) {                  // Making the object rotate towards mousePointer
+        object.rotation = game.physics.arcade.moveToPointer(object, allyTurretSpeed, game.input.activePointer, allyTurretSpeed);
+    }
+    function freeze(object) {                               // Tells the object in the argument to stop moving
+        object.body.velocity.x = 0;                         // Setting x velocity to 0
+        object.body.velocity.y = 0;                         // Setting y velocity to 0
+    }
+    function fireBullet() {                                         // Contains all the code to make a bullet and shoot it
+    bullets.createMultiple(1, 'bullet'); 
+    allyBullets.createMultiple(1, 'allyBullet'); 
+        if (game.time.now > nextReload && bullets.countDead()) {    // Timer
+            nextReload = game.time.now + reloadRate;                // Fire speed
+            bullet = bullets.getFirstDead();
+            bullet.reset(playerShip.x - 0, playerShip.y - 0);       // Resetting bullet position
+            bullet.anchor.setTo(0.55, 0.5);                         // Setting anchor to the middle
+
+            // Shooting in the direction of the mouse
+            bullet.rotation = game.physics.arcade.moveToPointer(bullet, 100, game.input.activePointer, 500);
+            game.physics.arcade.moveToPointer(bullet, 1200);
+            
+
+            // Animation
+            playerShip.animations.play('playerShipState3', 14, false);
+            nextBulletText = reloadRate / 1000;
+            
+        if (allyTurret.visible == true) {
+            allyBullet = allyBullets.getFirstDead();
+            allyBullet.reset(allyTurret.x, allyTurret.y);       // Resetting bullet position
+            allyBullet.anchor.setTo(0.55, 0.5);                         // Setting anchor to the middle
+            allyBullet.rotation = game.physics.arcade.moveToPointer(allyBullet, 100, game.input.activePointer, 500);
+            game.physics.arcade.moveToPointer(allyBullet, 1200);
+            }
+        }
+        
+    }
+
+    
+    /**** Upgrades ****/
+    function upgradeBulletSpeed(){
+        if (money >= bulletSpeedUpgradePrice && reloadRate > 100) {
+            reloadRate -= 100
+            money -= bulletSpeedUpgradePrice;
+            bulletSpeedUpgradePrice += 50;
+        }
+        else if (reloadRate <= 100){ 
+            bulletUpgradeText.setText("[1 Key]MAXED OUT, Currently: " + reloadRate/1000);
+       
+        }
+    }
+    function upgradePlayerSpeed(){
+        if (money >= playerSpeedUpgradePrice && playerShipSpeed > 500) {
+        playerShipSpeed -= 300
+        money -= playerSpeedUpgradePrice;
+        playerSpeedUpgradePrice += 30;
+        }
+        else if (playerShipSpeed <= 500){ 
+            playerSpeedUpgradeText.setText("[2 Key]MAXED OUT, Currently: " + playerShipSpeed);
+        }
+        
+    }
+    function upgradeAlly(){
+        if (money >= allyUpgradePrice && allyTurretSpeed >= 1500) {
+            allyTurretSpeed -= 1500;
+            money -= allyUpgradePrice;
+            allyUpgradePrice += +50;
+        }
+        else {}
+    }
+    
+    /**** Enemy Related ****/
+    /****************************************************************************************************************************************************************************
+            Mark this one - Function with Parameters (no return value)
+    ****************************************************************************************************************************************************************************/
+    function spawnEnemy(enemyType) {                            // The follwing code is for creating a random location outside of world bounds to spawn the enmies 
+        var rndNumber = generateRandomNumber(1, 4);             // Random number deciding which of the four sides (top,bottom,left,right) to spawn an enemy
+        var spawnX;                                             // X cord
+        var spawnY;                                             // Y cord
+        
+        if (rndNumber == 1) {                                   // Creating cords on the left
+            spawnX = -20;
+            spawnY = generateRandomNumber(0, 1500);
+        }
+        if (rndNumber == 2) {                                   // Creating cords on the right
+            spawnX = 2600;
+            spawnY = generateRandomNumber(0, 1600);
+        }
+        if (rndNumber == 3) {                                   // Creating cords on the top
+            spawnX = generateRandomNumber(0, 2550);
+            spawnY = -20;
+        }
+        if (rndNumber == 4) {                                   // Creating cords on the bottom
+            spawnX = generateRandomNumber(0, 1600);
+            spawnY = 1600;
+        }
+
+        
+        if (enemyType == 1) {                                       // If the enemyType = 1, meaning we're spaning enemy1, execute the following code
+            enemy1 = game.add.sprite(spawnX, spawnY, "enemy1");     // Adding enemy1 sprite
+            game.physics.arcade.enable(enemy1);                     // Arcade physics
+            enemies1.add(enemy1);                                   // Adding to group
+            enemy1.anchor.setTo(0.4, 0.5);                          // Setting anchor to middle
+            
+            // Annimations
+            enemy1.animations.add('enemy1Moving', [1, 2, 3, 4]);    // Moving animation
+            enemy1.animations.play('enemy1Moving', 12, true);       // Playing moving animation
+        }
+        
+        if (enemyType == 2 && 0 >= enemies2.countLiving()) {                                       // If the enemyType = 1, meaning we're spaning enemy1, execute the following code (and ensuring theres only 1 enemy2 at a time)
+            enemy2 = game.add.sprite(spawnX, spawnY, "enemy1");     // Adding enemy1 sprite
+            game.physics.arcade.enable(enemy2);                     // Arcade physics
+            enemies2.add(enemy2);                                   // Adding to group
+            enemy2.anchor.setTo(0.4, 0.5);                          // Setting anchor to middle
+            enemy2.scale.setTo(1.5, 1.5);
+            
+            // Annimations
+            enemy2.animations.add('enemy2Moving', [1, 2, 3, 4]);    // Moving animation
+            enemy2.animations.play('enemy2Moving', 12, true);       // Playing moving animation
+            enemy2Health = 10;
+        }
+    }
+    function followShip(objectGroup, object, shipType) {    // Making enemy ships follow the player ship
+        objectGroup.forEach(function(object) {
+            if (shipType == 0) {                            // Meteor follow
+                game.physics.arcade.moveToXY(object, meteorEndX, meteorEndY, meteorSpeed); 
+            }
+            if (shipType == 1) {                            // Enemy ship one follow
+                object.rotation = game.physics.arcade.angleBetween(object, playerShip);
+                game.physics.arcade.moveToObject(object, playerShip, enemy1Speed);
+            }
+            if (shipType == 2) {                            // Enemy ship two follow
+                object.rotation = game.physics.arcade.angleBetween(object, playerShip);
+                game.physics.arcade.moveToObject(object, playerShip, enemy2Speed);
+            }
+        });
+    }
+    function enemyFireBullet(){
+        enemy2Bullet = game.add.sprite(enemy2.x, enemy2.y, "bullet2")
+        game.physics.arcade.enable(enemy2Bullet);
+        enemyBullets.add(enemy2Bullet);
+        //move to ship
+        game.physics.arcade.moveToXY(enemy2Bullet, playerShip.x, playerShip.y, enemyBulletSpeed); 
+    }
+   
+    function createMeteor() {
+        var rndNumber = generateRandomNumber(1, 1);             // Reserved incase we decide to add mroe types of meteors (otherwise not needed)
+        var spawnX;                                             // X cord
+        var spawnY;                                             // Y cord   
+        if (rndNumber == 1) {                                   // Creating cords
+            spawnX = -200;
+            spawnY = generateRandomNumber(0, 1500);
+            meteorEndX = 2700;
+            meteorEndY = generateRandomNumber(0, 1500);
+        }
+        
+            meteor = game.add.sprite(spawnX, spawnY, "meteor");     // Adding enemy1 sprite
+            game.physics.arcade.enable(meteor);                     // Arcade physics
+            meteors.add(meteor);                                    // Adding to group
+            meteor.anchor.setTo(0.5, 0.5);   
+            meteor.scale.setTo(0.5, 0.5);
+            game.physics.arcade.moveToXY(meteor, meteorEndX, meteorEndY, 100); 
+    }
+    
+    /**** Collision Related ****/
+    function enemyHit(bullet, enemy) {                     // Destroying enemy ship
+        enemy.destroy();
+        addMoney(3);                                        // Adding money
+        explosionCords(enemy.x, enemy.y);                   // Adding explosion
+    }  
+    function enemy2Hit(bullet, enemy) {                     // minusinging enemy health unntil it is 0, then destroying it  
+        if (enemy2Health > 1) {
+            enemy2Health--;
+            fadeText = game.add.text(enemy.x - 20, enemy.y - 20, "health: " + enemy2Health, greenText);
+            textFade(fadeText);
+            bullet.destroy();                               // Destroying bullet
+        }
+        else {
+            addMoney(10);                                    // Adding money
+            fadeText = game.add.text(enemy.x - 20, enemy.y - 20, "+20 score, +10 Money " + enemy2Health, greenText);
+            score+= 20;
+            textFade(fadeText);
+            enemy.destroy();                                // Destroying enemy
+        }
+        explosionCords(enemy.x, enemy.y);                   // Adding explosion
+    }  
+    function enemy2HitByShip(bullet, enemy) {                     // Destroyine enmy and minusing player health
+        fadeText = game.add.text(enemy.x - 20, enemy.y - 20, "-20 score, -20 Health ", redText);
+        score-= 20;
+        health -=20;
+        textFade(fadeText);
+        enemy.destroy();                                // Destroying enemy
+        explosionCords(enemy.x, enemy.y);                   // Adding explosion
+    } 
+    function hitByEnemy2Bullet(player, enemyBullet){
+        fadeText = game.add.text(enemyBullet.x - 20, enemyBullet.y - 20, "-5 score, -5 Health ", redText);
+        score-= 5;
+        health -=5;
+        textFade(fadeText);                              // Destroying enemy
+        enemyBullet.destroy();
+        explosionCords(player.x, player.y);                   // Adding explosion
+    }
+    function meteorHit(player, meteor) {                     // Destroying enemy ship
+        meteor.destroy();
+        addMoney(0);                                        // Adding money
+        explosionCords(meteor.x, meteor.y, 4);                   // Adding explosion
+    }
+    function textFade(text) {
+        //SCORE GAIN TEXT DISPLAY FADING
+        game.time.events.add(10, function() {
+            game.add.tween(text);
+            game.add.tween(text).to({
+                alpha: 0
+            }, 1500, Phaser.Easing.Linear.None, true);
+        }, this);
+    }
+    function explosionCords(x, y, scale) {                         // Explosion animation
+        explosion = game.add.sprite(x, y, "explosion");
+        if (scale == null) {scale = 1}
+        explosion.scale.setTo(scale, scale);
+        explosion.anchor.setTo(0.5, 0.5);
+        explode = explosion.animations.add("explode");
+        explosion.animations.play("explode", 20, false, true);
+    }
+    
+    /**** Scores, Currency, Text, Timers, Etc. ****/
+    function addPoints(bobject1, object2) {
+        fadeText = game.add.text(object2.x - 20, object2.y - 20, "+10 Score, +3 Money", greenText);
+        textFade(fadeText);
+        score += 10;
+
+     }
+    function minusPointsAndHealth1(object1, object2) {
+        fadeText = game.add.text(object2.x - 20, object2.y - 20, "-10 Score, -5 Health", redText);
+        score -= 10;
+        health -= 5;
+        textFade(fadeText);
+    }
+    function minusPointsAndHealth2(object1, object2) {
+        fadeText = game.add.text(object2.x - 20, object2.y - 20, "-50 Score, -5 Health", redText);
+        score -= 100;
+        health -= 50;
+        textFade(fadeText);
+    }  
+    function addMoney(ammount) {                            // Adding the ammount provided in the argument to money variable
+        money += ammount;                                   // Adding ammount to money
+    }
+    /****************************************************************************************************************************************************************************
+           Mark this one -  Function without Parameters (1 return value)    (Contains selection too)
+     ****************************************************************************************************************************************************************************/
+    function nextWaveTime() {                           // This function returns the wave number and updates amost everything regarding waves in our game
+        if (game.time.now >= nextWave) {                // The following code is hard to explain but essentially, it is a timed iteration, happening ever 30 seconds or so
+            nextWave = game.time.now + nextWaveWait;    // Adding time to a variable that is checked constantly to match the games current time, this is how the "timer" works
+            wave += 1; 
+            secondsUntilNextWave = nextWaveWait/1000;   // Converting it to seconds  (this is for seperate code)
+            
+            /**** Upgrades To Obstacles that heppen every wave ****/
+            // Every wave upgrades:
+            enemy1Speed += 25;
+            enemy1SpawnTime -= 200;
+            if (enemy1Speed >= 350) {enemy1Speed = 350}
+            if (enemy1SpawnTime <= 500) {enemy1SpawnTime = 400}
+            
+            // Wave specific upgrades:
+            if (wave == 3) {wave3Reached = true;}       // This will start making meteors shoot across
+            if (wave == 4) {meteorSpeed += 100;}        // Making meteors faster
+            if (wave == 5) {meteorSpeed += 100; meteorSpawnTime -= 5000;}   // Making meteors faster and more occasional
+            if (wave == 7) {meteorSpeed += 150; meteorSpawnTime -= 2000;}  // Making meteors faster and more occasional
+        }
+        
+        
+        if (game.time.now >= nextCheck) {               // This timer works very simmilar to the one above amd it counts down by the second
+            nextCheck = game.time.now + 1000;           // setting it to iterating every second
+            secondsUntilNextWave -= 1;
+            secondsUntilNextWave = secondsUntilNextWave.toFixed(0);
+         }
+        return wave;   // Returning wave number to a peice of text 
+    }
+    function bulletReloadTime() {
+        if (game.time.now >= nextBulletReady) {
+            nextBulletReady = game.time.now + bulletReadyRate; // setting the timer to update after a set ammount of time (constantly every 0.1 second)
+            nextBulletText -= 0.1; // subtracting 0.1 from original sum (updating the variable to be accurate)
+        }
+        if (nextBulletText <= 0) { // self explanatory
+            nextBulletText = 0;
+            return "Ready";
+        } else {
+            return nextBulletText.toFixed(1); // rounds to 1 decimal place and returns the time left till a new bullet is ready
+        }
+    } 
+    /****************************************************************************************************************************************************************************
+            Mark this one - Function with Parameters (1 return value)
+    ****************************************************************************************************************************************************************************/
+    function generateRandomNumber(min, max) {                       /* This wansn't created for no reason. We will require random numbers various times in order to create,     */
+         return Math.floor(Math.random() * (max + 1 - min) + min);  /* choose, and position things. It is easier to  create one function (will be used at least a dozen times)  */
+        
+    }
+
+    /******************
+          Preload
+    ******************/
+    function preload() {
+        game.load.spritesheet('background', 'assets/background.png');                           // Background image spritesheet
+        game.load.image('bullet', 'assets/bullet.png');                                         // Bullets sprite (for the player ship below)
+        game.load.image('bullet2', 'assets/bullet2.png');                                        // Bullets sprite (for the enemy ships)
+        game.load.spritesheet('playerShip', 'assets/playerShip.png', 85, 68, 11);               //  Player ship state2 spritesheet
+        game.load.spritesheet('explosion', 'assets/explosion.png', 75, 75, 9);                  // Explosion sprite spritesheet
+        game.load.spritesheet('enemy1', 'assets/enemy1.png', 79, 32, 8);                        // Enemy ship 1
+        game.load.spritesheet('bulletUpgradeButton', 'assets/bulletUpgrade.png', 79, 32, 8);    // Bullet Upgrade Sprite
+        game.load.spritesheet('button', 'assets/button.png',32,32,3)                            // Button for upgrades
+        game.load.image('meteor', 'assets/meteor.png');  
+        
+        game.load.image('allyTurret', 'assets/allyTurret.png'); 
+        game.load.image('allyBullet', 'assets/bullet.png');                                         // Bullets sprite (for the player ship below)
+    }
+
+    /******************
+          Create
+    ******************/
+    function create() {
+        game.physics.startSystem(Phaser.Physics.ARCADE);                    // Setting the game physics
+        background = game.add.sprite(-500,-500,'background');               //Background
+
+        // Player Ship
+        playerShip = game.add.sprite(740, 590, 'playerShip');               // Adding the player's ship (playerShip)
+        playerShip.animations.add('playerShipState1', [1, 2, 3]);           // State one animation (moving)
+        playerShip.animations.add('playerShipState2', [4, 5, 6]);           // State two animation(still)
+        playerShip.animations.add('playerShipState3', [6, 8, 9, 10, 4, 5]); // State three animation (shooting)
+        
+        game.physics.enable(playerShip, Phaser.Physics.ARCADE);             // Player ship physics
+        playerShip.anchor.setTo(0.55, 0.5);                                 // Player anchor set to middle
+        // playerShip.body.allowRotation = false;      
+        //playerShip.visible = true;
+        
+        bullets = game.add.group();                                         // Adding bullets group which will contain every bullet sprite (for the playerShip)
+        bullets.physicsBodyType = Phaser.Physics.ARCADE;                    // Bullets group physics 
+        bullets.enableBody = true;                                          // Allowing for collision's and more
+        
+        
+        // Ally Turret                                                      // Similar to previous code  
+        allyTurret = game.add.sprite(-10, -10, 'allyTurret');                     
+        game.physics.enable(allyTurret, Phaser.Physics.ARCADE);          
+        allyTurret.anchor.setTo(0.55, 0.5);     
+        allyBullets = game.add.group();                                         
+        allyBullets.physicsBodyType = Phaser.Physics.ARCADE;                    
+        allyBullets.enableBody = true; 
+        allyTurret.visible = false;
+        
+        //bullets.setAll('checkWorldBounds', true);
+        //bullets.setAll('outOfBoundsKill', true);
+        
+        meteors = game.add.group();                                         // Adding bullets group which will contain every bullet sprite (for the playerShip)
+        meteors.physicsBodyType = Phaser.Physics.ARCADE;                    // Bullets group physics 
+        meteors.enableBody = true;                                          // Allowing for collision's and more
+
+        // Enemy ship(s)
+        enemies1 = game.add.group();                                         // Adding enemy1 group
+        game.physics.enable(enemies1, Phaser.Physics.ARCADE);                // Arcade physics
+        
+        // Enemy ship(s)
+        enemies2 = game.add.group();                                         // Adding enemy1 group
+        game.physics.enable(enemies2, Phaser.Physics.ARCADE);                // Arcade physics
+        enemyBullets = game.add.group();                                         
+        enemyBullets.physicsBodyType = Phaser.Physics.ARCADE;     
+
+        // Scores
+        scoreText = game.add.text(20, 10, score, greenText);                // Score
+        bulletText = game.add.text(20, 1350, "", redText);                  // Bullet time
+        waveText = game.add.text(20, 1300, wave, redText);                   // Wave
+        moneyText = game.add.text(20, 40, money, greenText);                 // Money
+        healthText = game.add.text(20, 70, health, greenText);                 // Money
+        
+        // Upgrades
+        bulletUpgradeText = game.add.text(20, 1400, "Bullet Upgrade", greenText);    
+        //bulletSpeedUpgradeButton = game.add.button(300, 800, 'button', upgradeBulletSpeed, this, 1,0,2);
+        
+        playerSpeedUpgradeText = game.add.text(20, 1450, "Speed Upgrade", greenText);    
+        //playerSpeedUpgradeButton = game.add.button(300, 850, 'button', upgradePlayerSpeed, this, 1,0,2);
+        
+        allyUpgradeText = game.add.text(800, 1450, "[3 Key] Ally Upgrade [adds an ally ship!] (100 Dollars)", greenText);    
+        //playerSpeedUpgradeButton = game.add.button(300, 850, 'button', upgradePlayerSpeed, this, 1,0,2);
+        
+        
+        
+
+    }
+    
+    /******************
+          Update
+    ******************/
+    function update() {
+        background.pivot.x = playerShip.x/5;
+        background.pivot.y = playerShip.y/5;
+        
+        /**** Player Ship ****/
+        followCursor(playerShip, playerShipSpeed);                          // Telling player ship to follow cursor
+        if (allyTurret.visible == true) { // If ally turrt has been upgraded its functions will begin working
+            allyTurretRotate(allyTurret);
+        }
+
+        /**** Shooting Bullets ****/
+        if (health > 0){
+            if (game.input.activePointer.isDown) {                              // When mouse pointer is clicked
+                fireBullet();                                                   // Calling fireBullet function
+
+                if (game.input.keyboard.addKey(Phaser.Keyboard.W).isDown) {
+                    freeze(playerShip);                                         // Freezing playerShip if 'W' is pressed by calling freeze function
+                }
+            } else {
+                if (game.input.keyboard.addKey(Phaser.Keyboard.W).isDown) {
+                    freeze(playerShip);                                         // Freezing playerShip if 'W' is pressed by calling freeze function
+                    playerShip.animations.play('playerShipState2', 12, false);  // Idle/still animation if 'W' is pressed
+                } else {
+                    playerShip.animations.play('playerShipState1', 12, false);  // Movement  animation (whenever the ship is moving)
+                }
+            }
+        }
+
+        /**** Enemies ****/
+        // Spawning enemy1
+        if (game.time.now >= nextSpawn) {
+            nextSpawn = game.time.now + enemy1SpawnTime;    // The following code is a timer that ensures the if statement only executes after the ammount of time assigned
+            spawnEnemy(1);                                  // Spawning enemy1 (outside of world bounds)
+            
+        }
+        // Spawning enemy2
+        if (game.time.now >= nextSpawn2) {
+            nextSpawn2 = game.time.now + enemy2SpawnTime;    // The following code is a timer that ensures the if statement only executes after the ammount of time assigned
+            if (wave3Reached == true) {
+                spawnEnemy(2);
+            }
+        }
+        followShip(enemies1, enemy1, 1);                    // Telling all enemy1's to Rotate towards, and following playerShip
+        followShip(enemies2, enemy2, 2);                    // Telling all enemy2's to Rotate towards, and following playerShip
+        if (game.time.now >= nextEnemy2Bullet && 1 == enemies2.countLiving()) { // If one enemy is available to shoot from and the bullet is reloaded, fire the bullet
+            nextEnemy2Bullet = game.time.now + enemy2BulletTime;
+            enemyFireBullet();
+        }
+        
+        if (game.time.now >= nextMeteorSpawn) {
+            nextMeteorSpawn = game.time.now + meteorSpawnTime;    // The following code is a timer that ensures the if statement only executes after the ammount of time assigned
+            if (wave3Reached == true) {
+                createMeteor();                                  // Spawning meteor (outside of world bounds)
+            }
+        }
+        if (wave3Reached == true) {
+            followShip(meteors, meteor, 0); 
+        }
+        
+        
+        /**** Collisions ****/
+        game.physics.arcade.overlap(bullets, enemies1, addPoints, enemyHit, this);           // If enemy1 collides with playerShip's bullet
+        game.physics.arcade.overlap(allyBullets, enemies1, addPoints, enemyHit, this);           // If enemy1 collides with allyTurret's bullet
+        
+        game.physics.arcade.overlap(playerShip, enemies1, minusPointsAndHealth1, enemyHit, this);      // If playerShip collides with enemy1
+        game.physics.arcade.overlap(allyTurret, enemies1, null, enemyHit, this);      // If playerShip collides with enemy1
+        game.physics.arcade.overlap(playerShip, meteors, minusPointsAndHealth2, meteorHit, this);      // If playerShip collides with Meteor
+        
+        // Enemy 2 related collisions
+        game.physics.arcade.overlap(bullets, enemies2, null, enemy2Hit, this);           // If enemy1 collides with playerShip's bullet
+        game.physics.arcade.overlap(playerShip, enemies2, null, enemy2HitByShip, this);      // If playerShip collides with enemy1
+        game.physics.arcade.overlap(playerShip, enemyBullets, null, hitByEnemy2Bullet);
+
+        /*** Text Related ***/
+        scoreText.setText("Score: " + score);                       // Updating  scoreText 
+        if (score <= 0) {score = 0;}
+        bulletText.setText("Next Bullet: " + bulletReloadTime());   // Updating  bulletText (Shows when your nex bullet will be availible) 
+        waveText.setText("Wave: " + nextWaveTime() + ", Next Wave: " + secondsUntilNextWave + " sec"); // updating waveText 
+        // Note: NextWaveTime also updates everything regarding waves including wave number and creating new challenges for the player every wave
+        
+        if (game.time.now >= nextMoneyAdd) {                // Money variable related
+            nextMoneyAdd = game.time.now + moneyAddTime;    // Adding coins every second
+            addMoney(1);                                    // Adding 1 to money
+        }
+        moneyText.setText("Money: " + money);               // Updating moneyText 
+        
+        healthText.setText("Health: " + health)
+        // Upgrades
+        bulletUpgradeText.setText("[1 Key]Bullet Upgrade (" + bulletSpeedUpgradePrice + " Dollars), Currently: " + reloadRate/1000);
+        playerSpeedUpgradeText.setText("[2 Key]Speed Upgrade (" + playerSpeedUpgradePrice + " Dollars), Currently: " + playerShipSpeed);
+        
+        if (allyTurret.visible == true){ // Once the ally turret has been made visible, change the upgrade it will get to upgrade the ally's speed
+            allyUpgradeText.setText("[3 Key] Ally Speed Upgrade (" + allyUpgradePrice + " Dollars), Currently: " + allyTurretSpeed);
+            if (game.input.keyboard.addKey(Phaser.Keyboard.THREE).isDown == true){ 
+                    upgradeAlly();
+            }
+        }
+        else if (game.input.keyboard.addKey(Phaser.Keyboard.THREE).isDown == true && money >= 100){ 
+            allyTurret.x = 1250;                            // Once upgraded, the ally will spawn at the top of the map and begin moving slowly towards the player ship 
+            allyTurret.y = -20;
+            allyTurret.visible = true;
+            money -= 100;
+        }
+        if (game.input.keyboard.addKey(Phaser.Keyboard.ONE).isDown == true) { 
+            upgradeBulletSpeed();
+        }
+        if (game.input.keyboard.addKey(Phaser.Keyboard.TWO).isDown == true){ 
+            upgradePlayerSpeed();
+        }
+        
+       if (health <= 0) {endGame();}
+    }
+    
+    function endGame() {
+        enemies1.destroy();
+        enemies2.destroy();
+        enemyBullets.destroy();
+        meteors.destroy();
+        playerShip.visible = false;
+        allyTurret.visible = false;
+        scoreText.destroy();
+        waveText.destroy();
+        moneyText.destroy();
+        bulletText.destroy();
+        healthText.destroy();
+        bulletUpgradeText.destroy();
+        playerSpeedUpgradeText.destroy();
+        allyUpgradeText.destroy();
+        
+        var endText = game.add.text(1000, 650, "Game Over", endTextFont);
+        
+        setTimeout(function() {
+            if (ended == false) {
+                ended = true;
+                window.location.href = "menu.html";
+            }
+        }, 3000);
+    }
+
+    function checkUserName(name) {
+        var nameLength;
+
+        if (name == "null") {
+            name = "Guest";
+        }
+
+        name = name.trim();
+        if (name == "") {
+            name = "Guest";
+        }
+
+        name = name.toUpperCase();
+
+        if (name.length > 20) {
+            nameLength = 20;
+        }
+        else if (name.length <= 20) {
+            nameLength = name.length;
+        }
+
+        name = name.substring(0, nameLength);
+        return name;
+    }
+</script>
+</html>
